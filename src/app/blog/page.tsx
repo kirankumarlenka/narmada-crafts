@@ -14,10 +14,19 @@ interface BlogPost {
 }
 
 // Convert various YouTube URL formats to standard embed URLs
-function getYouTubeEmbedUrl(url?: string) {
+function getYouTubeEmbedUrl(url?: string): string | null {
   if (!url) return null;
-  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
-  return match ? `https://www.youtube.com/embed/${match[1]}` : null;
+  const cleanUrl = url.trim();
+
+  // Match youtube.com/watch?v=ID, youtu.be/ID, youtube.com/embed/ID, youtube.com/shorts/ID, etc.
+  const regExp = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=|shorts\/)|youtu\.be\/)([^"&?\/\s]{11})/i;
+  const match = cleanUrl.match(regExp);
+
+  if (match && match[1]) {
+    return `https://www.youtube-nocookie.com/embed/${match[1]}?rel=0&modestbranding=1`;
+  }
+
+  return null;
 }
 
 export default function BlogPage() {
@@ -72,17 +81,24 @@ export default function BlogPage() {
                   </div>
                 )}
 
-                {post.type === "VIDEO" && embedUrl && (
-                  <div className="aspect-video w-full">
-                    <iframe
-                      src={embedUrl}
-                      title={post.title}
-                      className="w-full h-full border-0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
-                  </div>
-                )}
+                {post.type === "VIDEO" && (
+  <div className="relative w-full aspect-video bg-black rounded-t-2xl overflow-hidden">
+    {embedUrl ? (
+      <iframe
+        src={embedUrl}
+        title={post.title}
+        className="w-full h-full border-0 absolute inset-0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        referrerPolicy="strict-origin-when-cross-origin"
+        allowFullScreen
+      />
+    ) : (
+      <div className="flex items-center justify-center h-full text-stone-400 text-xs p-4">
+        Invalid or unsupported YouTube URL format ({post.mediaUrl})
+      </div>
+    )}
+  </div>
+)}
 
                 {/* Post Content */}
                 <div className="p-6 space-y-3">
