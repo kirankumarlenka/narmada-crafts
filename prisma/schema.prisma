@@ -38,3 +38,13 @@ model IdolImage {
   idol      DeityIdol @relation(fields: [idolId], references: [id], onDelete: Cascade)
   createdAt DateTime  @default(now())
 }
+model BlogPost {
+  id        String   @id @default(cuid())
+  title     String
+  type      String   // "TEXT", "IMAGE", or "VIDEO"
+  content   String?  // Rich text or description
+  mediaUrl  String?  // Base64 Image URL or YouTube link/ID
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
