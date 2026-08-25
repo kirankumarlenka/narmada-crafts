@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, ImagePlus, Trash2, Upload, Edit, Check, X } from "lucide-react";
+import { Plus, ImagePlus, Trash2, Upload, Edit, Check, X, UserPlus } from "lucide-react";
 
 interface IdolImage {
   id: string;
@@ -41,6 +41,11 @@ export default function AdminPage() {
   const [occasion, setOccasion] = useState("");
   const [isPrimary, setIsPrimary] = useState(false);
   const [uploading, setUploading] = useState(false);
+
+  // Client User Credentials State
+  const [userEmail, setUserEmail] = useState("");
+  const [userPassword, setUserPassword] = useState("");
+  const [userCreatedMsg, setUserCreatedMsg] = useState("");
 
   const fetchIdols = () => {
     fetch("/api/idols")
@@ -201,10 +206,29 @@ export default function AdminPage() {
     fetchIdols();
   };
 
-  return (
-    <div className="space-y-8 py-4">
-      <h1 className="text-2xl font-bold text-amber-950">Admin Craft & Idol Management</h1>
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const res = await fetch("/api/admin/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: userEmail, password: userPassword, role: "USER" }),
+    });
 
+    if (res.ok) {
+      setUserCreatedMsg(`Access credentials created for ${userEmail}`);
+      setUserEmail("");
+      setUserPassword("");
+      setTimeout(() => setUserCreatedMsg(""), 4000);
+    } else {
+      alert("Failed to create user credentials");
+    }
+  };
+
+  return (
+    <div className="space-y-8 py-4 max-w-6xl mx-auto px-4">
+      <h1 className="text-2xl font-bold text-amber-950">Admin Craft & Access Management</h1>
+
+      {/* Forms Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Form 1: Add Deity Idol */}
         <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-sm">
@@ -258,7 +282,7 @@ export default function AdminPage() {
           </form>
         </div>
 
-        {/* Form 2: Attach Photos from Local Storage */}
+        {/* Form 2: Attach Photos */}
         <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-sm">
           <h2 className="text-lg font-semibold text-amber-900 mb-4 flex items-center gap-1.5">
             <ImagePlus className="w-5 h-5" /> 2. Upload & Attach Photo
@@ -343,16 +367,51 @@ export default function AdminPage() {
             </button>
           </form>
         </div>
+
+        {/* Form 3: Configure Client Credentials */}
+        <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-sm col-span-full">
+          <h2 className="text-base font-bold text-amber-900 mb-1 flex items-center gap-1.5">
+            <UserPlus className="w-4 h-4" /> 3. Configure Client Gallery Access Credentials
+          </h2>
+          <p className="text-xs text-stone-500 mb-4">
+            Generate email and passwords for clients who are permitted to view the protected Craft Gallery.
+          </p>
+          <form onSubmit={handleCreateUser} className="flex flex-col sm:flex-row gap-3">
+            <input
+              type="email"
+              required
+              value={userEmail}
+              onChange={(e) => setUserEmail(e.target.value)}
+              placeholder="client@example.com"
+              className="p-2 border rounded text-xs flex-1"
+            />
+            <input
+              type="password"
+              required
+              value={userPassword}
+              onChange={(e) => setUserPassword(e.target.value)}
+              placeholder="Assign Password"
+              className="p-2 border rounded text-xs flex-1"
+            />
+            <button
+              type="submit"
+              className="bg-amber-800 hover:bg-amber-700 text-white px-5 py-2 rounded text-xs font-semibold transition"
+            >
+              Create Account
+            </button>
+          </form>
+          {userCreatedMsg && <p className="text-xs text-emerald-700 font-medium mt-2">{userCreatedMsg}</p>}
+        </div>
       </div>
 
-      {/* Existing Idols & Image Gallery Manager */}
+      {/* Existing Records & Management */}
       <div className="bg-white p-5 rounded-xl border border-stone-200">
         <h2 className="text-lg font-bold text-stone-800 mb-4">Existing Records & Management</h2>
         <div className="space-y-4">
           {idols.map((idol) => (
             <div key={idol.id} className="p-4 border rounded-lg bg-stone-50 space-y-3">
               {editingIdolId === idol.id ? (
-                /* Edit Form */
+                /* Inline Edit Form */
                 <div className="space-y-3 bg-white p-4 rounded-lg border border-amber-300">
                   <h3 className="text-sm font-bold text-amber-900">Editing Deity Details</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -460,58 +519,3 @@ export default function AdminPage() {
     </div>
   );
 }
-// Inside AdminPage component state:
-const [userEmail, setUserEmail] = useState("");
-const [userPassword, setUserPassword] = useState("");
-const [userCreatedMsg, setUserCreatedMsg] = useState("");
-
-const handleCreateUser = async (e: React.FormEvent) => {
-  e.preventDefault();
-  const res = await fetch("/api/admin/users", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: userEmail, password: userPassword, role: "USER" }),
-  });
-
-  if (res.ok) {
-    setUserCreatedMsg(`Credentials configured for ${userEmail}`);
-    setUserEmail("");
-    setUserPassword("");
-    setTimeout(() => setUserCreatedMsg(""), 4000);
-  } else {
-    alert("Failed to create user credentials");
-  }
-};
-
-// Add this JSX block inside the Admin Dashboard grid:
-<div className="bg-white p-5 rounded-xl border border-stone-200 shadow-sm col-span-full">
-  <h2 className="text-base font-bold text-amber-900 mb-2">Configure Client Gallery Credentials</h2>
-  <p className="text-xs text-stone-500 mb-4">
-    Create username/email and passwords for clients to unlock the Craft Gallery.
-  </p>
-  <form onSubmit={handleCreateUser} className="flex flex-col sm:flex-row gap-3">
-    <input
-      type="email"
-      required
-      value={userEmail}
-      onChange={(e) => setUserEmail(e.target.value)}
-      placeholder="client@example.com"
-      className="p-2 border rounded text-xs flex-1"
-    />
-    <input
-      type="password"
-      required
-      value={userPassword}
-      onChange={(e) => setUserPassword(e.target.value)}
-      placeholder="Password"
-      className="p-2 border rounded text-xs flex-1"
-    />
-    <button
-      type="submit"
-      className="bg-stone-800 text-white px-4 py-2 rounded text-xs font-semibold hover:bg-stone-700"
-    >
-      Create Client Account
-    </button>
-  </form>
-  {userCreatedMsg && <p className="text-xs text-emerald-700 font-medium mt-2">{userCreatedMsg}</p>}
-</div>
