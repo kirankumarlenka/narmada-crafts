@@ -460,3 +460,58 @@ export default function AdminPage() {
     </div>
   );
 }
+// Inside AdminPage component state:
+const [userEmail, setUserEmail] = useState("");
+const [userPassword, setUserPassword] = useState("");
+const [userCreatedMsg, setUserCreatedMsg] = useState("");
+
+const handleCreateUser = async (e: React.FormEvent) => {
+  e.preventDefault();
+  const res = await fetch("/api/admin/users", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: userEmail, password: userPassword, role: "USER" }),
+  });
+
+  if (res.ok) {
+    setUserCreatedMsg(`Credentials configured for ${userEmail}`);
+    setUserEmail("");
+    setUserPassword("");
+    setTimeout(() => setUserCreatedMsg(""), 4000);
+  } else {
+    alert("Failed to create user credentials");
+  }
+};
+
+// Add this JSX block inside the Admin Dashboard grid:
+<div className="bg-white p-5 rounded-xl border border-stone-200 shadow-sm col-span-full">
+  <h2 className="text-base font-bold text-amber-900 mb-2">Configure Client Gallery Credentials</h2>
+  <p className="text-xs text-stone-500 mb-4">
+    Create username/email and passwords for clients to unlock the Craft Gallery.
+  </p>
+  <form onSubmit={handleCreateUser} className="flex flex-col sm:flex-row gap-3">
+    <input
+      type="email"
+      required
+      value={userEmail}
+      onChange={(e) => setUserEmail(e.target.value)}
+      placeholder="client@example.com"
+      className="p-2 border rounded text-xs flex-1"
+    />
+    <input
+      type="password"
+      required
+      value={userPassword}
+      onChange={(e) => setUserPassword(e.target.value)}
+      placeholder="Password"
+      className="p-2 border rounded text-xs flex-1"
+    />
+    <button
+      type="submit"
+      className="bg-stone-800 text-white px-4 py-2 rounded text-xs font-semibold hover:bg-stone-700"
+    >
+      Create Client Account
+    </button>
+  </form>
+  {userCreatedMsg && <p className="text-xs text-emerald-700 font-medium mt-2">{userCreatedMsg}</p>}
+</div>
