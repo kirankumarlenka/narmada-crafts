@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, ImagePlus, Trash2, Upload, Edit, Check, X, Newspaper } from "lucide-react";
+import { Plus, ImagePlus, Trash2, Upload, Edit, Check, X, Newspaper, KeyRound } from "lucide-react";
 
 interface IdolImage {
   id: string;
@@ -83,7 +83,8 @@ export default function AdminPage() {
           setIdols(data);
           if (data.length > 0 && !selectedIdolId) setSelectedIdolId(data[0].id);
         }
-      });
+      })
+      .catch((err) => console.error("Error fetching idols:", err));
   };
 
   const fetchBlogs = () => {
@@ -91,7 +92,8 @@ export default function AdminPage() {
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) setBlogs(data);
-      });
+      })
+      .catch((err) => console.error("Error fetching blogs:", err));
   };
 
   useEffect(() => {
@@ -277,7 +279,6 @@ export default function AdminPage() {
     fetchBlogs();
   };
 
-  // Live balance calculations
   const parsedTotal = parseFloat(totalAmount) || 0;
   const parsedAdvance = parseFloat(advanceAmount) || 0;
   const calculatedBalance = Math.max(0, parsedTotal - parsedAdvance);
@@ -290,7 +291,7 @@ export default function AdminPage() {
     <div className="space-y-10 py-6 max-w-6xl mx-auto px-4">
       <h1 className="text-2xl font-bold text-amber-950">Admin Craft & Order Dashboard</h1>
 
-      {/* Grid: 1. Add Deity & 2. Attach Photos */}
+      {/* Grid: Add Deity & Attach Photos */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Form 1: Add Deity Idol */}
         <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-sm space-y-4">
@@ -311,13 +312,15 @@ export default function AdminPage() {
 
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-xs font-semibold text-stone-600">Passcode *</label>
+                <label className="text-xs font-bold text-amber-900 flex items-center gap-1">
+                  <KeyRound className="w-3.5 h-3.5" /> Passcode *
+                </label>
                 <input
                   required
                   value={accessCode}
                   onChange={(e) => setAccessCode(e.target.value)}
-                  placeholder="e.g. SHIV-108"
-                  className="w-full p-2 border rounded text-sm mt-1 uppercase font-mono"
+                  placeholder="e.g. KKOTE01"
+                  className="w-full p-2 border-2 border-amber-300 rounded text-sm mt-1 uppercase font-mono font-bold"
                 />
               </div>
               <div>
@@ -498,79 +501,104 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* 3. Existing Deity Records & Management */}
+      {/* Existing Deity Records & Management */}
       <div className="bg-white p-5 rounded-xl border border-stone-200 space-y-4">
         <h2 className="text-lg font-bold text-stone-800">Existing Deity Order Records</h2>
         {idols.map((idol) => (
           <div key={idol.id} className="p-4 border rounded-lg bg-stone-50 space-y-3">
             {editingIdolId === idol.id ? (
               /* Inline Edit Mode */
-              <div className="space-y-3 bg-white p-4 rounded-lg border border-amber-300">
-                <h3 className="text-sm font-bold text-amber-900">Editing Order Details</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <input
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    placeholder="Deity Name"
-                    className="p-1.5 border rounded text-xs"
-                  />
-                  <input
-                    value={editAccessCode}
-                    onChange={(e) => setEditAccessCode(e.target.value)}
-                    placeholder="Passcode"
-                    className="p-1.5 border rounded text-xs uppercase"
-                  />
-                  <input
-                    value={editHeight}
-                    onChange={(e) => setEditHeight(e.target.value)}
-                    placeholder="Height (e.g. 3.5 Feet)"
-                    className="p-1.5 border rounded text-xs"
-                  />
-                  <input
-                    value={editTempleName}
-                    onChange={(e) => setEditTempleName(e.target.value)}
-                    placeholder="Temple Name"
-                    className="p-1.5 border rounded text-xs"
-                  />
-                  <input
-                    value={editLocation}
-                    onChange={(e) => setEditLocation(e.target.value)}
-                    placeholder="Location"
-                    className="p-1.5 border rounded text-xs sm:col-span-2"
-                  />
+              <div className="space-y-3 bg-amber-50/50 p-4 rounded-xl border border-amber-300">
+                <div className="flex items-center justify-between border-b border-amber-200 pb-2">
+                  <h3 className="text-sm font-bold text-amber-950">Editing Deity Details & Passcode</h3>
                 </div>
 
-                <div className="grid grid-cols-4 gap-2 bg-amber-50 p-2.5 rounded border border-amber-200">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[10px] font-bold text-amber-900">Total (₹)</label>
+                    <label className="text-xs font-semibold text-stone-700">Deity / Idol Name *</label>
+                    <input
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      placeholder="Deity Name"
+                      className="w-full p-2 border rounded text-xs bg-white mt-0.5 font-medium"
+                    />
+                  </div>
+
+                  {/* Passcode Edit Field */}
+                  <div>
+                    <label className="text-xs font-bold text-amber-900 flex items-center gap-1">
+                      <KeyRound className="w-3.5 h-3.5" /> Security Passcode *
+                    </label>
+                    <input
+                      value={editAccessCode}
+                      onChange={(e) => setEditAccessCode(e.target.value)}
+                      placeholder="e.g. KKOTE01"
+                      className="w-full p-2 border-2 border-amber-400 focus:border-amber-600 rounded text-xs bg-white mt-0.5 font-mono font-bold uppercase tracking-wider text-amber-950"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold text-stone-700">Idol Height</label>
+                    <input
+                      value={editHeight}
+                      onChange={(e) => setEditHeight(e.target.value)}
+                      placeholder="e.g. 3.5 Feet"
+                      className="w-full p-2 border rounded text-xs bg-white mt-0.5"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold text-stone-700">Temple Name</label>
+                    <input
+                      value={editTempleName}
+                      onChange={(e) => setEditTempleName(e.target.value)}
+                      placeholder="Temple Name"
+                      className="w-full p-2 border rounded text-xs bg-white mt-0.5"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="text-xs font-semibold text-stone-700">Location</label>
+                    <input
+                      value={editLocation}
+                      onChange={(e) => setEditLocation(e.target.value)}
+                      placeholder="Location / City"
+                      className="w-full p-2 border rounded text-xs bg-white mt-0.5"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-4 gap-2 bg-white p-3 rounded-lg border border-amber-200">
+                  <div>
+                    <label className="text-[10px] font-bold text-stone-600">Total (₹)</label>
                     <input
                       type="number"
                       value={editTotalAmount}
                       onChange={(e) => setEditTotalAmount(e.target.value)}
-                      className="p-1 border rounded text-xs w-full bg-white"
+                      className="p-1.5 border rounded text-xs w-full bg-white mt-0.5"
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-amber-900">Advance (₹)</label>
+                    <label className="text-[10px] font-bold text-stone-600">Advance (₹)</label>
                     <input
                       type="number"
                       value={editAdvanceAmount}
                       onChange={(e) => setEditAdvanceAmount(e.target.value)}
-                      className="p-1 border rounded text-xs w-full bg-white"
+                      className="p-1.5 border rounded text-xs w-full bg-white mt-0.5"
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-amber-900">Balance (₹)</label>
-                    <div className="p-1 border border-amber-300 rounded text-xs bg-white font-bold">
+                    <label className="text-[10px] font-bold text-stone-600">Balance (₹)</label>
+                    <div className="p-1.5 border border-stone-200 rounded text-xs bg-stone-50 font-bold text-rose-700 mt-0.5">
                       ₹{calculatedEditBalance.toLocaleString()}
                     </div>
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-amber-900">Status</label>
+                    <label className="text-[10px] font-bold text-stone-600">Status</label>
                     <select
                       value={editStatus}
                       onChange={(e) => setEditStatus(e.target.value)}
-                      className="p-1 border rounded text-xs w-full bg-white"
+                      className="p-1.5 border rounded text-xs w-full bg-white font-medium mt-0.5"
                     >
                       <option value="In progress">In progress</option>
                       <option value="Ready">Ready</option>
@@ -579,25 +607,28 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                <textarea
-                  value={editDescription}
-                  onChange={(e) => setEditDescription(e.target.value)}
-                  placeholder="Description"
-                  className="p-1.5 border rounded text-xs w-full"
-                />
+                <div>
+                  <label className="text-xs font-semibold text-stone-700">Description</label>
+                  <textarea
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    placeholder="Craft description or notes..."
+                    className="w-full p-2 border rounded text-xs bg-white mt-0.5"
+                  />
+                </div>
 
-                <div className="flex gap-2 justify-end">
+                <div className="flex gap-2 justify-end pt-2">
                   <button
                     onClick={cancelEdit}
-                    className="flex items-center gap-1 text-xs px-3 py-1 bg-stone-200 hover:bg-stone-300 rounded text-stone-700"
+                    className="flex items-center gap-1 text-xs px-3 py-1.5 bg-stone-200 hover:bg-stone-300 rounded text-stone-700 font-medium transition"
                   >
                     <X className="w-3.5 h-3.5" /> Cancel
                   </button>
                   <button
                     onClick={() => handleSaveEdit(idol.id)}
-                    className="flex items-center gap-1 text-xs px-3 py-1 bg-amber-800 hover:bg-amber-700 rounded text-white font-medium"
+                    className="flex items-center gap-1 text-xs px-4 py-1.5 bg-amber-800 hover:bg-amber-700 rounded text-white font-semibold shadow-sm transition"
                   >
-                    <Check className="w-3.5 h-3.5" /> Save Changes
+                    <Check className="w-3.5 h-3.5" /> Save Updated Passcode & Details
                   </button>
                 </div>
               </div>
@@ -607,7 +638,7 @@ export default function AdminPage() {
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="font-bold text-amber-950 text-base">{idol.name}</h3>
-                    <span className="text-xs bg-amber-100 text-amber-900 font-mono px-2 py-0.5 rounded border border-amber-300 font-semibold">
+                    <span className="text-xs bg-amber-100 text-amber-900 font-mono px-2.5 py-0.5 rounded border border-amber-300 font-bold tracking-wider">
                       Passcode: {idol.accessCode || "None"}
                     </span>
                     <span
@@ -633,7 +664,6 @@ export default function AdminPage() {
                       .join(" • ") || "No location / height details"}
                   </p>
 
-                  {/* Financial summary badges */}
                   <div className="flex flex-wrap gap-2 text-xs pt-1">
                     <span className="bg-stone-200/70 text-stone-700 px-2 py-0.5 rounded font-medium">
                       Total: ₹{(idol.totalAmount || 0).toLocaleString()}
@@ -652,13 +682,13 @@ export default function AdminPage() {
                 <div className="flex items-center gap-2 shrink-0">
                   <button
                     onClick={() => startEdit(idol)}
-                    className="flex items-center gap-1 text-xs px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded font-medium transition"
+                    className="flex items-center gap-1 text-xs px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-md font-semibold transition"
                   >
-                    <Edit className="w-3.5 h-3.5" /> Edit
+                    <Edit className="w-3.5 h-3.5" /> Edit Passcode / Details
                   </button>
                   <button
                     onClick={() => handleDeleteIdol(idol.id, idol.name)}
-                    className="flex items-center gap-1 text-xs px-2.5 py-1 bg-rose-100 hover:bg-rose-200 text-rose-800 rounded font-medium transition"
+                    className="flex items-center gap-1 text-xs px-3 py-1.5 bg-rose-100 hover:bg-rose-200 text-rose-800 rounded-md font-semibold transition"
                   >
                     <Trash2 className="w-3.5 h-3.5" /> Delete
                   </button>
@@ -666,7 +696,7 @@ export default function AdminPage() {
               </div>
             )}
 
-            {/* Attached Photo Gallery */}
+            {/* Photos */}
             <div className="pt-2 border-t border-stone-200">
               <span className="text-xs font-semibold text-stone-600 mb-2 block">
                 Photos ({idol.images.length})
@@ -698,7 +728,7 @@ export default function AdminPage() {
         ))}
       </div>
 
-      {/* 4. Blog Post Publisher */}
+      {/* Dynamic Blog Publisher */}
       <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm space-y-4">
         <h2 className="text-lg font-bold text-amber-900 flex items-center gap-2">
           <Newspaper className="w-5 h-5" /> Dynamic Blog Publisher
