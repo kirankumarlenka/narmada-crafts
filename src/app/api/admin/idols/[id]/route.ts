@@ -5,7 +5,6 @@ import { authOptions } from "../../../auth/[...nextauth]/route";
 
 export const dynamic = "force-dynamic";
 
-// Edit / Update an Idol record
 export async function PATCH(
   req: Request,
   context: { params: Promise<{ id: string }> | { id: string } }
@@ -17,11 +16,31 @@ export async function PATCH(
     }
 
     const params = await Promise.resolve(context.params);
-    const { name, templeName, location, description } = await req.json();
+    const {
+      name,
+      templeName,
+      location,
+      description,
+      accessCode,
+      height,
+      totalAmount,
+      advanceAmount,
+      status,
+    } = await req.json();
 
     const updated = await prisma.deityIdol.update({
       where: { id: params.id },
-      data: { name, templeName, location, description },
+      data: {
+        name,
+        templeName: templeName || null,
+        location: location || null,
+        description: description || null,
+        accessCode: accessCode ? accessCode.trim() : null,
+        height: height || null,
+        totalAmount: totalAmount !== undefined ? parseFloat(totalAmount) : undefined,
+        advanceAmount: advanceAmount !== undefined ? parseFloat(advanceAmount) : undefined,
+        status: status || "In progress",
+      },
     });
 
     return NextResponse.json(updated);
@@ -33,7 +52,6 @@ export async function PATCH(
   }
 }
 
-// Delete an Idol record and its associated images
 export async function DELETE(
   req: Request,
   context: { params: Promise<{ id: string }> | { id: string } }
@@ -46,12 +64,10 @@ export async function DELETE(
 
     const params = await Promise.resolve(context.params);
 
-    // 1. Delete associated images first to maintain database consistency
     await prisma.idolImage.deleteMany({
       where: { idolId: params.id },
     });
 
-    // 2. Delete the idol record
     await prisma.deityIdol.delete({
       where: { id: params.id },
     });

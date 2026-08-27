@@ -1,13 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, ImagePlus, Trash2, Upload, Edit, Check, X, Newspaper, Video, FileText, ImageIcon } from "lucide-react";
+import { Plus, ImagePlus, Trash2, Upload, Edit, Check, X, Newspaper } from "lucide-react";
 
 interface IdolImage {
   id: string;
   url: string;
   caption?: string;
-  occasion?: string;
   isPrimary: boolean;
 }
 
@@ -18,6 +17,10 @@ interface DeityIdol {
   location?: string;
   description?: string;
   accessCode?: string;
+  height?: string;
+  totalAmount?: number;
+  advanceAmount?: number;
+  status?: string;
   images: IdolImage[];
 }
 
@@ -34,12 +37,16 @@ export default function AdminPage() {
   const [idols, setIdols] = useState<DeityIdol[]>([]);
   const [blogs, setBlogs] = useState<BlogPost[]>([]);
 
-  // Idol State
+  // Add Idol State
   const [name, setName] = useState("");
   const [templeName, setTempleName] = useState("");
   const [location, setLocation] = useState("");
   const [description, setDescription] = useState("");
   const [accessCode, setAccessCode] = useState("");
+  const [height, setHeight] = useState("");
+  const [totalAmount, setTotalAmount] = useState<string>("");
+  const [advanceAmount, setAdvanceAmount] = useState<string>("");
+  const [status, setStatus] = useState("In progress");
 
   // Edit Idol State
   const [editingIdolId, setEditingIdolId] = useState<string | null>(null);
@@ -48,16 +55,19 @@ export default function AdminPage() {
   const [editLocation, setEditLocation] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editAccessCode, setEditAccessCode] = useState("");
+  const [editHeight, setEditHeight] = useState("");
+  const [editTotalAmount, setEditTotalAmount] = useState<string>("");
+  const [editAdvanceAmount, setEditAdvanceAmount] = useState<string>("");
+  const [editStatus, setEditStatus] = useState("In progress");
 
   // Photo Upload State
   const [selectedIdolId, setSelectedIdolId] = useState("");
   const [base64Image, setBase64Image] = useState<string>("");
   const [caption, setCaption] = useState("");
-  const [occasion, setOccasion] = useState("");
   const [isPrimary, setIsPrimary] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  // Blog Post State
+  // Dynamic Blog State
   const [blogTitle, setBlogTitle] = useState("");
   const [blogType, setBlogType] = useState<"TEXT" | "IMAGE" | "VIDEO">("TEXT");
   const [blogContent, setBlogContent] = useState("");
@@ -127,7 +137,17 @@ export default function AdminPage() {
     const res = await fetch("/api/idols", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, templeName, location, description, accessCode }),
+      body: JSON.stringify({
+        name,
+        templeName,
+        location,
+        description,
+        accessCode,
+        height,
+        totalAmount: parseFloat(totalAmount) || 0,
+        advanceAmount: parseFloat(advanceAmount) || 0,
+        status,
+      }),
     });
 
     if (res.ok) {
@@ -136,10 +156,31 @@ export default function AdminPage() {
       setLocation("");
       setDescription("");
       setAccessCode("");
+      setHeight("");
+      setTotalAmount("");
+      setAdvanceAmount("");
+      setStatus("In progress");
       fetchIdols();
     } else {
-      alert("Failed to create idol entry.");
+      alert("Failed to create deity record.");
     }
+  };
+
+  const startEdit = (idol: DeityIdol) => {
+    setEditingIdolId(idol.id);
+    setEditName(idol.name);
+    setEditTempleName(idol.templeName || "");
+    setEditLocation(idol.location || "");
+    setEditDescription(idol.description || "");
+    setEditAccessCode(idol.accessCode || "");
+    setEditHeight(idol.height || "");
+    setEditTotalAmount(idol.totalAmount?.toString() || "");
+    setEditAdvanceAmount(idol.advanceAmount?.toString() || "");
+    setEditStatus(idol.status || "In progress");
+  };
+
+  const cancelEdit = () => {
+    setEditingIdolId(null);
   };
 
   const handleSaveEdit = async (idolId: string) => {
@@ -152,6 +193,10 @@ export default function AdminPage() {
         location: editLocation,
         description: editDescription,
         accessCode: editAccessCode,
+        height: editHeight,
+        totalAmount: parseFloat(editTotalAmount) || 0,
+        advanceAmount: parseFloat(editAdvanceAmount) || 0,
+        status: editStatus,
       }),
     });
 
@@ -164,7 +209,7 @@ export default function AdminPage() {
   };
 
   const handleDeleteIdol = async (idolId: string, idolName: string) => {
-    if (!confirm(`Delete "${idolName}" and all photos?`)) return;
+    if (!confirm(`Delete "${idolName}" and all associated photos?`)) return;
     await fetch(`/api/admin/idols/${idolId}`, { method: "DELETE" });
     fetchIdols();
   };
@@ -178,13 +223,12 @@ export default function AdminPage() {
       const res = await fetch(`/api/admin/idols/${selectedIdolId}/images`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: base64Image, caption, occasion, isPrimary }),
+        body: JSON.stringify({ url: base64Image, caption, isPrimary }),
       });
 
       if (res.ok) {
         setBase64Image("");
         setCaption("");
-        setOccasion("");
         setIsPrimary(false);
         fetchIdols();
       }
@@ -202,7 +246,6 @@ export default function AdminPage() {
   const handleCreateBlog = async (e: React.FormEvent) => {
     e.preventDefault();
     setBlogSubmitting(true);
-
     const media = blogType === "IMAGE" ? blogBase64Image : blogMediaUrl;
 
     const res = await fetch("/api/blogs", {
@@ -234,205 +277,204 @@ export default function AdminPage() {
     fetchBlogs();
   };
 
+  // Live balance calculations
+  const parsedTotal = parseFloat(totalAmount) || 0;
+  const parsedAdvance = parseFloat(advanceAmount) || 0;
+  const calculatedBalance = Math.max(0, parsedTotal - parsedAdvance);
+
+  const parsedEditTotal = parseFloat(editTotalAmount) || 0;
+  const parsedEditAdvance = parseFloat(editAdvanceAmount) || 0;
+  const calculatedEditBalance = Math.max(0, parsedEditTotal - parsedEditAdvance);
+
   return (
     <div className="space-y-10 py-6 max-w-6xl mx-auto px-4">
-      <h1 className="text-2xl font-bold text-amber-950">Admin Dashboard: Idols & Dynamic Blog</h1>
+      <h1 className="text-2xl font-bold text-amber-950">Admin Craft & Order Dashboard</h1>
 
-      {/* 1. Dynamic Blog Publisher Form */}
-      <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm space-y-4">
-        <h2 className="text-lg font-bold text-amber-900 flex items-center gap-2">
-          <Newspaper className="w-5 h-5" /> Publish New Blog Post (Text / Image / YouTube)
-        </h2>
-        <form onSubmit={handleCreateBlog} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {/* Grid: 1. Add Deity & 2. Attach Photos */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Form 1: Add Deity Idol */}
+        <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-sm space-y-4">
+          <h2 className="text-lg font-semibold text-amber-900 flex items-center gap-1.5">
+            <Plus className="w-5 h-5" /> 1. Add New Deity Idol Order
+          </h2>
+          <form onSubmit={handleCreateIdol} className="space-y-3">
             <div>
-              <label className="text-xs font-semibold text-stone-600">Blog Title *</label>
+              <label className="text-xs font-semibold text-stone-600">Deity / Idol Name *</label>
               <input
                 required
-                value={blogTitle}
-                onChange={(e) => setBlogTitle(e.target.value)}
-                placeholder="e.g. History of Omkareshwar Jyotirlinga Stone"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Narmadeshwar Shivling"
                 className="w-full p-2 border rounded text-sm mt-1"
               />
             </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-xs font-semibold text-stone-600">Passcode *</label>
+                <input
+                  required
+                  value={accessCode}
+                  onChange={(e) => setAccessCode(e.target.value)}
+                  placeholder="e.g. SHIV-108"
+                  className="w-full p-2 border rounded text-sm mt-1 uppercase font-mono"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-stone-600">Idol Height</label>
+                <input
+                  value={height}
+                  onChange={(e) => setHeight(e.target.value)}
+                  placeholder="e.g. 3.5 Feet / 24 Inches"
+                  className="w-full p-2 border rounded text-sm mt-1"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-xs font-semibold text-stone-600">Temple Name</label>
+                <input
+                  value={templeName}
+                  onChange={(e) => setTempleName(e.target.value)}
+                  placeholder="e.g. Omkareshwar Jyotirlinga"
+                  className="w-full p-2 border rounded text-sm mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-stone-600">Location</label>
+                <input
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="e.g. Khandwa, MP"
+                  className="w-full p-2 border rounded text-sm mt-1"
+                />
+              </div>
+            </div>
+
+            {/* Financials & Status */}
+            <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-lg space-y-2">
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label className="text-[11px] font-semibold text-amber-900">Total (₹)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={totalAmount}
+                    onChange={(e) => setTotalAmount(e.target.value)}
+                    placeholder="0"
+                    className="w-full p-1.5 border rounded text-xs mt-0.5 bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-semibold text-amber-900">Advance (₹)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={advanceAmount}
+                    onChange={(e) => setAdvanceAmount(e.target.value)}
+                    placeholder="0"
+                    className="w-full p-1.5 border rounded text-xs mt-0.5 bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-semibold text-amber-900">Balance (₹)</label>
+                  <div className="w-full p-1.5 border border-amber-300 rounded text-xs mt-0.5 bg-white font-bold text-amber-950 flex items-center">
+                    ₹{calculatedBalance.toLocaleString()}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-semibold text-amber-900">Order Status</label>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  className="w-full p-1.5 border rounded text-xs mt-0.5 bg-white font-medium"
+                >
+                  <option value="In progress">In progress</option>
+                  <option value="Ready">Ready</option>
+                  <option value="Delivered">Delivered</option>
+                </select>
+              </div>
+            </div>
+
             <div>
-              <label className="text-xs font-semibold text-stone-600">Post Type *</label>
+              <label className="text-xs font-semibold text-stone-600">Description / Specs</label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Details about craftsmanship, natural river stone..."
+                className="w-full p-2 border rounded text-sm mt-1"
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="w-full bg-amber-800 text-white py-2 rounded text-sm font-medium hover:bg-amber-700 transition"
+            >
+              Save Deity Record
+            </button>
+          </form>
+        </div>
+
+        {/* Form 2: Attach Photos */}
+        <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-sm space-y-4">
+          <h2 className="text-lg font-semibold text-amber-900 flex items-center gap-1.5">
+            <ImagePlus className="w-5 h-5" /> 2. Attach Photo to Deity
+          </h2>
+          <form onSubmit={handleAddImage} className="space-y-3">
+            <div>
+              <label className="text-xs font-semibold text-stone-600">Select Deity *</label>
               <select
-                value={blogType}
-                onChange={(e) => setBlogType(e.target.value as any)}
+                value={selectedIdolId}
+                onChange={(e) => setSelectedIdolId(e.target.value)}
                 className="w-full p-2 border rounded text-sm mt-1 bg-white"
               >
-                <option value="TEXT">1. Text Article</option>
-                <option value="IMAGE">2. Image Story (Upload Local Image)</option>
-                <option value="VIDEO">3. YouTube Video Embed</option>
+                {idols.map((idol) => (
+                  <option key={idol.id} value={idol.id}>
+                    {idol.name} ({idol.height || "No height"}) - Passcode: {idol.accessCode || "None"}
+                  </option>
+                ))}
               </select>
             </div>
-          </div>
 
-          {/* Conditional Media Input */}
-          {blogType === "IMAGE" && (
             <div>
-              <label className="text-xs font-semibold text-stone-600">Upload Blog Image *</label>
+              <label className="text-xs font-semibold text-stone-600">Upload Image File *</label>
               <input
                 type="file"
                 accept="image/*"
                 required
                 onChange={(e) => {
-                  if (e.target.files?.[0]) handleFileCompress(e.target.files[0], setBlogBase64Image);
+                  if (e.target.files?.[0]) handleFileCompress(e.target.files[0], setBase64Image);
                 }}
                 className="w-full p-2 border rounded text-sm mt-1 file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:bg-amber-100 file:text-amber-800"
               />
             </div>
-          )}
 
-          {blogType === "VIDEO" && (
+            {base64Image && (
+              <div className="mt-1">
+                <img
+                  src={base64Image}
+                  alt="Selected Preview"
+                  className="w-20 h-20 object-cover rounded border border-stone-200"
+                />
+              </div>
+            )}
+
             <div>
-              <label className="text-xs font-semibold text-stone-600">YouTube Video URL *</label>
+              <label className="text-xs font-semibold text-stone-600">Caption / Note</label>
               <input
-                type="url"
-                required
-                value={blogMediaUrl}
-                onChange={(e) => setBlogMediaUrl(e.target.value)}
-                placeholder="https://www.youtube.com/watch?v=..."
+                value={caption}
+                onChange={(e) => setCaption(e.target.value)}
+                placeholder="e.g. Finishing stage polishing complete"
                 className="w-full p-2 border rounded text-sm mt-1"
               />
             </div>
-          )}
 
-          <div>
-            <label className="text-xs font-semibold text-stone-600">Article Content / Description</label>
-            <textarea
-              rows={4}
-              value={blogContent}
-              onChange={(e) => setBlogContent(e.target.value)}
-              placeholder="Write the blog text, context, or explanation..."
-              className="w-full p-2 border rounded text-sm mt-1"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={blogSubmitting}
-            className="bg-amber-800 hover:bg-amber-700 text-white px-6 py-2 rounded text-sm font-semibold transition"
-          >
-            {blogSubmitting ? "Publishing..." : "Publish Post to Live Blog"}
-          </button>
-        </form>
-
-        {/* Existing Blogs List */}
-        {blogs.length > 0 && (
-          <div className="pt-4 border-t border-stone-200">
-            <h3 className="text-xs font-bold text-stone-600 uppercase tracking-wider mb-2">Published Posts</h3>
-            <div className="space-y-2">
-              {blogs.map((b) => (
-                <div key={b.id} className="flex justify-between items-center bg-stone-50 p-3 rounded border text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold bg-amber-100 text-amber-900 px-2 py-0.5 rounded">
-                      {b.type}
-                    </span>
-                    <span className="font-semibold text-stone-800">{b.title}</span>
-                  </div>
-                  <button
-                    onClick={() => handleDeleteBlog(b.id)}
-                    className="text-rose-700 hover:text-rose-900 text-xs font-semibold flex items-center gap-1"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" /> Delete
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* 2. Idols & Photos Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Form: Add Idol */}
-        <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-sm">
-          <h2 className="text-lg font-semibold text-amber-900 mb-4 flex items-center gap-1.5">
-            <Plus className="w-5 h-5" /> Add New Deity Idol
-          </h2>
-          <form onSubmit={handleCreateIdol} className="space-y-3">
-            <input
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Deity / Idol Name *"
-              className="w-full p-2 border rounded text-sm"
-            />
-            <input
-              required
-              value={accessCode}
-              onChange={(e) => setAccessCode(e.target.value)}
-              placeholder="Passcode for Customer (e.g. SHIVA-108) *"
-              className="w-full p-2 border rounded text-sm uppercase"
-            />
-            <input
-              value={templeName}
-              onChange={(e) => setTempleName(e.target.value)}
-              placeholder="Temple Name"
-              className="w-full p-2 border rounded text-sm"
-            />
-            <input
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="Location"
-              className="w-full p-2 border rounded text-sm"
-            />
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Description..."
-              className="w-full p-2 border rounded text-sm"
-            />
-            <button
-              type="submit"
-              className="w-full bg-amber-800 text-white py-2 rounded text-sm font-medium hover:bg-amber-700"
-            >
-              Save Deity Idol
-            </button>
-          </form>
-        </div>
-
-        {/* Form: Attach Photos */}
-        <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-sm">
-          <h2 className="text-lg font-semibold text-amber-900 mb-4 flex items-center gap-1.5">
-            <ImagePlus className="w-5 h-5" /> Attach Photo to Deity
-          </h2>
-          <form onSubmit={handleAddImage} className="space-y-3">
-            <select
-              value={selectedIdolId}
-              onChange={(e) => setSelectedIdolId(e.target.value)}
-              className="w-full p-2 border rounded text-sm bg-white"
-            >
-              {idols.map((idol) => (
-                <option key={idol.id} value={idol.id}>
-                  {idol.name} (Code: {idol.accessCode || "None"})
-                </option>
-              ))}
-            </select>
-            <input
-              type="file"
-              accept="image/*"
-              required
-              onChange={(e) => {
-                if (e.target.files?.[0]) handleFileCompress(e.target.files[0], setBase64Image);
-              }}
-              className="w-full p-2 border rounded text-sm file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:bg-amber-100 file:text-amber-800"
-            />
-            <input
-              value={occasion}
-              onChange={(e) => setOccasion(e.target.value)}
-              placeholder="Occasion / Shringar"
-              className="w-full p-2 border rounded text-sm"
-            />
-            <input
-              value={caption}
-              onChange={(e) => setCaption(e.target.value)}
-              placeholder="Caption"
-              className="w-full p-2 border rounded text-sm"
-            />
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 pt-1">
               <input
                 type="checkbox"
                 id="isPrimary"
@@ -440,58 +482,302 @@ export default function AdminPage() {
                 onChange={(e) => setIsPrimary(e.target.checked)}
               />
               <label htmlFor="isPrimary" className="text-xs text-stone-700">
-                Set as Primary Photo
+                Set as Primary / Cover Photo
               </label>
             </div>
+
             <button
               type="submit"
               disabled={!selectedIdolId || !base64Image || uploading}
-              className="w-full bg-stone-800 text-white py-2 rounded text-sm font-medium hover:bg-stone-700 disabled:opacity-50"
+              className="w-full bg-stone-800 text-white py-2 rounded text-sm font-medium hover:bg-stone-700 disabled:opacity-50 flex items-center justify-center gap-2 transition"
             >
-              {uploading ? "Saving..." : "Upload Photo"}
+              <Upload className="w-4 h-4" />
+              {uploading ? "Saving Photo..." : "Upload Photo"}
             </button>
           </form>
         </div>
       </div>
 
-      {/* Existing Idols List */}
+      {/* 3. Existing Deity Records & Management */}
       <div className="bg-white p-5 rounded-xl border border-stone-200 space-y-4">
-        <h2 className="text-lg font-bold text-stone-800">Existing Deity Records</h2>
+        <h2 className="text-lg font-bold text-stone-800">Existing Deity Order Records</h2>
         {idols.map((idol) => (
           <div key={idol.id} className="p-4 border rounded-lg bg-stone-50 space-y-3">
-            <div className="flex justify-between items-start">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="font-bold text-amber-950">{idol.name}</h3>
-                  <span className="text-xs bg-amber-100 text-amber-900 font-mono px-2 py-0.5 rounded border border-amber-300 font-semibold">
-                    Passcode: {idol.accessCode || "None"}
-                  </span>
+            {editingIdolId === idol.id ? (
+              /* Inline Edit Mode */
+              <div className="space-y-3 bg-white p-4 rounded-lg border border-amber-300">
+                <h3 className="text-sm font-bold text-amber-900">Editing Order Details</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <input
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    placeholder="Deity Name"
+                    className="p-1.5 border rounded text-xs"
+                  />
+                  <input
+                    value={editAccessCode}
+                    onChange={(e) => setEditAccessCode(e.target.value)}
+                    placeholder="Passcode"
+                    className="p-1.5 border rounded text-xs uppercase"
+                  />
+                  <input
+                    value={editHeight}
+                    onChange={(e) => setEditHeight(e.target.value)}
+                    placeholder="Height (e.g. 3.5 Feet)"
+                    className="p-1.5 border rounded text-xs"
+                  />
+                  <input
+                    value={editTempleName}
+                    onChange={(e) => setEditTempleName(e.target.value)}
+                    placeholder="Temple Name"
+                    className="p-1.5 border rounded text-xs"
+                  />
+                  <input
+                    value={editLocation}
+                    onChange={(e) => setEditLocation(e.target.value)}
+                    placeholder="Location"
+                    className="p-1.5 border rounded text-xs sm:col-span-2"
+                  />
                 </div>
-                <p className="text-xs text-stone-500">{[idol.templeName, idol.location].filter(Boolean).join(" • ")}</p>
-              </div>
-              <button
-                onClick={() => handleDeleteIdol(idol.id, idol.name)}
-                className="text-xs px-2.5 py-1 bg-rose-100 text-rose-800 rounded font-medium hover:bg-rose-200"
-              >
-                Delete
-              </button>
-            </div>
 
-            <div className="flex flex-wrap gap-2 pt-2 border-t border-stone-200">
-              {idol.images.map((img) => (
-                <div key={img.id} className="relative group w-16 h-16 rounded border overflow-hidden">
-                  <img src={img.url} alt="idol" className="w-full h-full object-cover" />
+                <div className="grid grid-cols-4 gap-2 bg-amber-50 p-2.5 rounded border border-amber-200">
+                  <div>
+                    <label className="text-[10px] font-bold text-amber-900">Total (₹)</label>
+                    <input
+                      type="number"
+                      value={editTotalAmount}
+                      onChange={(e) => setEditTotalAmount(e.target.value)}
+                      className="p-1 border rounded text-xs w-full bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-amber-900">Advance (₹)</label>
+                    <input
+                      type="number"
+                      value={editAdvanceAmount}
+                      onChange={(e) => setEditAdvanceAmount(e.target.value)}
+                      className="p-1 border rounded text-xs w-full bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-amber-900">Balance (₹)</label>
+                    <div className="p-1 border border-amber-300 rounded text-xs bg-white font-bold">
+                      ₹{calculatedEditBalance.toLocaleString()}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-amber-900">Status</label>
+                    <select
+                      value={editStatus}
+                      onChange={(e) => setEditStatus(e.target.value)}
+                      className="p-1 border rounded text-xs w-full bg-white"
+                    >
+                      <option value="In progress">In progress</option>
+                      <option value="Ready">Ready</option>
+                      <option value="Delivered">Delivered</option>
+                    </select>
+                  </div>
+                </div>
+
+                <textarea
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  placeholder="Description"
+                  className="p-1.5 border rounded text-xs w-full"
+                />
+
+                <div className="flex gap-2 justify-end">
                   <button
-                    onClick={() => handleDeleteImage(img.id)}
-                    className="absolute inset-0 bg-red-900/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100"
+                    onClick={cancelEdit}
+                    className="flex items-center gap-1 text-xs px-3 py-1 bg-stone-200 hover:bg-stone-300 rounded text-stone-700"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <X className="w-3.5 h-3.5" /> Cancel
+                  </button>
+                  <button
+                    onClick={() => handleSaveEdit(idol.id)}
+                    className="flex items-center gap-1 text-xs px-3 py-1 bg-amber-800 hover:bg-amber-700 rounded text-white font-medium"
+                  >
+                    <Check className="w-3.5 h-3.5" /> Save Changes
                   </button>
                 </div>
-              ))}
+              </div>
+            ) : (
+              /* Normal View Mode */
+              <div className="flex justify-between items-start">
+                <div className="space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-bold text-amber-950 text-base">{idol.name}</h3>
+                    <span className="text-xs bg-amber-100 text-amber-900 font-mono px-2 py-0.5 rounded border border-amber-300 font-semibold">
+                      Passcode: {idol.accessCode || "None"}
+                    </span>
+                    <span
+                      className={`text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wide ${
+                        idol.status === "Delivered"
+                          ? "bg-emerald-100 text-emerald-800"
+                          : idol.status === "Ready"
+                          ? "bg-blue-100 text-blue-800"
+                          : "bg-amber-200 text-amber-900"
+                      }`}
+                    >
+                      {idol.status || "In progress"}
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-stone-500">
+                    {[
+                      idol.height ? `Height: ${idol.height}` : null,
+                      idol.templeName,
+                      idol.location,
+                    ]
+                      .filter(Boolean)
+                      .join(" • ") || "No location / height details"}
+                  </p>
+
+                  {/* Financial summary badges */}
+                  <div className="flex flex-wrap gap-2 text-xs pt-1">
+                    <span className="bg-stone-200/70 text-stone-700 px-2 py-0.5 rounded font-medium">
+                      Total: ₹{(idol.totalAmount || 0).toLocaleString()}
+                    </span>
+                    <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-medium">
+                      Advance: ₹{(idol.advanceAmount || 0).toLocaleString()}
+                    </span>
+                    <span className="bg-rose-100 text-rose-800 px-2 py-0.5 rounded font-bold">
+                      Balance: ₹{Math.max(0, (idol.totalAmount || 0) - (idol.advanceAmount || 0)).toLocaleString()}
+                    </span>
+                  </div>
+
+                  {idol.description && <p className="text-xs text-stone-600 pt-1">{idol.description}</p>}
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => startEdit(idol)}
+                    className="flex items-center gap-1 text-xs px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded font-medium transition"
+                  >
+                    <Edit className="w-3.5 h-3.5" /> Edit
+                  </button>
+                  <button
+                    onClick={() => handleDeleteIdol(idol.id, idol.name)}
+                    className="flex items-center gap-1 text-xs px-2.5 py-1 bg-rose-100 hover:bg-rose-200 text-rose-800 rounded font-medium transition"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" /> Delete
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Attached Photo Gallery */}
+            <div className="pt-2 border-t border-stone-200">
+              <span className="text-xs font-semibold text-stone-600 mb-2 block">
+                Photos ({idol.images.length})
+              </span>
+              {idol.images.length === 0 ? (
+                <p className="text-xs text-stone-400 italic">No photos attached yet.</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {idol.images.map((img) => (
+                    <div key={img.id} className="relative group w-16 h-16 rounded border overflow-hidden bg-stone-100">
+                      <img src={img.url} alt="idol" className="w-full h-full object-cover" />
+                      {img.isPrimary && (
+                        <span className="absolute top-0 left-0 bg-amber-800 text-[9px] text-white px-1 py-0.5 rounded-br font-bold">
+                          Cover
+                        </span>
+                      )}
+                      <button
+                        onClick={() => handleDeleteImage(img.id)}
+                        className="absolute inset-0 bg-red-900/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         ))}
+      </div>
+
+      {/* 4. Blog Post Publisher */}
+      <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm space-y-4">
+        <h2 className="text-lg font-bold text-amber-900 flex items-center gap-2">
+          <Newspaper className="w-5 h-5" /> Dynamic Blog Publisher
+        </h2>
+        <form onSubmit={handleCreateBlog} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <input
+              required
+              value={blogTitle}
+              onChange={(e) => setBlogTitle(e.target.value)}
+              placeholder="Blog Title *"
+              className="w-full p-2 border rounded text-sm"
+            />
+            <select
+              value={blogType}
+              onChange={(e) => setBlogType(e.target.value as any)}
+              className="w-full p-2 border rounded text-sm bg-white"
+            >
+              <option value="TEXT">1. Text Article</option>
+              <option value="IMAGE">2. Image Story</option>
+              <option value="VIDEO">3. YouTube Video Embed</option>
+            </select>
+          </div>
+
+          {blogType === "IMAGE" && (
+            <input
+              type="file"
+              accept="image/*"
+              required
+              onChange={(e) => {
+                if (e.target.files?.[0]) handleFileCompress(e.target.files[0], setBlogBase64Image);
+              }}
+              className="w-full p-2 border rounded text-sm file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:bg-amber-100 file:text-amber-800"
+            />
+          )}
+
+          {blogType === "VIDEO" && (
+            <input
+              type="url"
+              required
+              value={blogMediaUrl}
+              onChange={(e) => setBlogMediaUrl(e.target.value)}
+              placeholder="https://www.youtube.com/watch?v=..."
+              className="w-full p-2 border rounded text-sm"
+            />
+          )}
+
+          <textarea
+            rows={3}
+            value={blogContent}
+            onChange={(e) => setBlogContent(e.target.value)}
+            placeholder="Article body content..."
+            className="w-full p-2 border rounded text-sm"
+          />
+
+          <button
+            type="submit"
+            disabled={blogSubmitting}
+            className="bg-amber-800 hover:bg-amber-700 text-white px-5 py-2 rounded text-sm font-semibold transition"
+          >
+            {blogSubmitting ? "Publishing..." : "Publish Post"}
+          </button>
+        </form>
+
+        {blogs.length > 0 && (
+          <div className="pt-3 border-t border-stone-200 space-y-2">
+            {blogs.map((b) => (
+              <div key={b.id} className="flex justify-between items-center bg-stone-50 p-2.5 rounded border text-sm">
+                <span className="font-medium text-stone-800">{b.title}</span>
+                <button
+                  onClick={() => handleDeleteBlog(b.id)}
+                  className="text-rose-700 text-xs font-semibold hover:underline"
+                >
+                  Delete
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

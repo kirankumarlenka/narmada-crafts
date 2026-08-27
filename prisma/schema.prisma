@@ -17,15 +17,19 @@ model User {
 }
 
 model DeityIdol {
-  id          String      @id @default(cuid())
-  name        String
-  templeName  String?
-  location    String?
-  description String?
-  accessCode  String?     // Specific password/code for this idol
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  images      IdolImage[]
+  id            String      @id @default(cuid())
+  name          String
+  templeName    String?
+  location      String?
+  description   String?
+  accessCode    String?     // Specific password/code for this idol
+  height        String?     // e.g. "3.5 Feet", "24 Inches"
+  totalAmount   Float?      @default(0)
+  advanceAmount Float?      @default(0)
+  status        String?     @default("In progress") // "In progress", "Ready", "Delivered"
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  images        IdolImage[]
 }
 
 model IdolImage {
