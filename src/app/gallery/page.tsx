@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MapPin, Building2, KeyRound, Ruler } from "lucide-react";
+import { MapPin, Building2, KeyRound, Ruler, ZoomIn, ZoomOut, Maximize2, X, RotateCcw } from "lucide-react";
 
 interface IdolImage {
   id: string;
@@ -29,6 +29,14 @@ export default function ViewYourIdolPage() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+
+  // In-line hover zoom state
+  const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
+  const [isHovering, setIsHovering] = useState(false);
+
+  // Modal full-screen zoom state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalScale, setModalScale] = useState(1);
 
   const handleUnlock = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +66,25 @@ export default function ViewYourIdolPage() {
     }
   };
 
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - left) / width) * 100;
+    const y = ((e.clientY - top) / height) * 100;
+    setZoomPos({ x, y });
+  };
+
+  const openModal = () => {
+    setModalScale(1);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setModalScale(1);
+  };
+
   const balance = Math.max(0, (idol?.totalAmount || 0) - (idol?.advanceAmount || 0));
+  const activeImage = idol?.images?.[activeImageIndex];
 
   return (
     <div className="max-w-4xl mx-auto py-10 px-4 space-y-8">
@@ -78,7 +104,7 @@ export default function ViewYourIdolPage() {
             required
             value={passcode}
             onChange={(e) => setPasscode(e.target.value)}
-            placeholder="Enter passcode (e.g. SHIV-108)"
+            placeholder="Enter passcode (e.g. KKOTE01)"
             className="flex-1 p-2.5 border rounded-lg text-sm bg-white border-stone-300 focus:outline-none focus:ring-2 focus:ring-amber-800 uppercase tracking-wider font-mono"
           />
           <button
@@ -161,20 +187,37 @@ export default function ViewYourIdolPage() {
             {idol.description && <p className="text-sm text-stone-600 pt-1 leading-relaxed">{idol.description}</p>}
           </div>
 
-          {/* Photo Gallery */}
-          {idol.images.length > 0 ? (
+          {/* Photo Gallery with Zoom */}
+          {idol.images.length > 0 && activeImage ? (
             <div className="space-y-4">
-              <div className="aspect-[4/3] w-full max-h-[500px] bg-stone-100 rounded-xl overflow-hidden flex items-center justify-center">
+              {/* Interactive Zoom Window */}
+              <div
+                className="relative aspect-[4/3] w-full max-h-[500px] bg-stone-900/5 rounded-xl overflow-hidden cursor-crosshair border border-stone-200 group"
+                onMouseEnter={() => setIsHovering(true)}
+                onMouseLeave={() => setIsHovering(false)}
+                onMouseMove={handleMouseMove}
+                onClick={openModal}
+              >
                 <img
-                  src={idol.images[activeImageIndex].url}
+                  src={activeImage.url}
                   alt={idol.name}
-                  className="w-full h-full object-contain bg-stone-900/5"
+                  className="w-full h-full object-contain transition-transform duration-150 ease-out"
+                  style={{
+                    transformOrigin: `${zoomPos.x}% ${zoomPos.y}%`,
+                    transform: isHovering ? "scale(2.2)" : "scale(1)",
+                  }}
                 />
+
+                {/* Hover instruction badge */}
+                <div className="absolute bottom-3 right-3 bg-stone-900/75 text-white text-[11px] px-2.5 py-1 rounded-md backdrop-blur-sm pointer-events-none flex items-center gap-1.5 opacity-80 group-hover:opacity-100 transition">
+                  <Maximize2 className="w-3.5 h-3.5" />
+                  <span>Hover to zoom • Click to expand</span>
+                </div>
               </div>
 
-              {idol.images[activeImageIndex].caption && (
+              {activeImage.caption && (
                 <p className="text-xs text-center text-stone-500 italic">
-                  {idol.images[activeImageIndex].caption}
+                  {activeImage.caption}
                 </p>
               )}
 
@@ -186,7 +229,7 @@ export default function ViewYourIdolPage() {
                       key={img.id}
                       onClick={() => setActiveImageIndex(idx)}
                       className={`w-16 h-16 rounded-lg overflow-hidden border-2 transition ${
-                        activeImageIndex === idx ? "border-amber-800 scale-105" : "border-stone-200 opacity-60"
+                        activeImageIndex === idx ? "border-amber-800 scale-105" : "border-stone-200 opacity-60 hover:opacity-100"
                       }`}
                     >
                       <img src={img.url} alt="thumbnail" className="w-full h-full object-cover" />
@@ -197,6 +240,58 @@ export default function ViewYourIdolPage() {
             </div>
           ) : (
             <p className="text-xs text-stone-400 text-center py-8 italic">No photos attached yet.</p>
+          )}
+        </div>
+      )}
+
+      {/* Fullscreen Interactive Zoom Lightbox Modal */}
+      {isModalOpen && activeImage && (
+        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex flex-col items-center justify-center p-4 select-none">
+          {/* Top Controls */}
+          <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
+            <button
+              onClick={() => setModalScale((s) => Math.min(s + 0.5, 4))}
+              className="p-2 bg-stone-800/80 hover:bg-stone-700 text-white rounded-lg transition"
+              title="Zoom In"
+            >
+              <ZoomIn className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setModalScale((s) => Math.max(s - 0.5, 1))}
+              className="p-2 bg-stone-800/80 hover:bg-stone-700 text-white rounded-lg transition"
+              title="Zoom Out"
+            >
+              <ZoomOut className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setModalScale(1)}
+              className="p-2 bg-stone-800/80 hover:bg-stone-700 text-white rounded-lg transition"
+              title="Reset Zoom"
+            >
+              <RotateCcw className="w-5 h-5" />
+            </button>
+            <button
+              onClick={closeModal}
+              className="p-2 bg-rose-700/80 hover:bg-rose-600 text-white rounded-lg transition ml-2"
+              title="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Scalable Modal Image */}
+          <div className="w-full h-full max-w-5xl max-h-[85vh] flex items-center justify-center overflow-auto">
+            <img
+              src={activeImage.url}
+              alt="Zoomed preview"
+              className="object-contain max-h-full transition-transform duration-200 ease-out"
+              style={{ transform: `scale(${modalScale})` }}
+            />
+          </div>
+
+          {/* Bottom Caption in Modal */}
+          {activeImage.caption && (
+            <p className="text-stone-300 text-xs mt-3">{activeImage.caption}</p>
           )}
         </div>
       )}
