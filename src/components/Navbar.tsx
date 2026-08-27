@@ -1,55 +1,71 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
-import { Sparkles, BookOpen, Image as ImageIcon, Shield, LogOut } from "lucide-react";
+import { BookOpen, KeyRound, Shield, LogOut } from "lucide-react";
 
 export default function Navbar() {
   const { data: session } = useSession();
   const isAdmin = (session?.user as any)?.role === "ADMIN";
 
   return (
-    <nav className="bg-amber-950 text-amber-50 border-b border-amber-900 shadow-sm sticky top-0 z-50">
-      <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-        <Link href="/blog" className="flex items-center gap-2 font-bold text-lg tracking-wide text-amber-200">
-          <Sparkles className="w-5 h-5 text-amber-400" />
-          <span>Narmada Crafts</span>
+    <nav className="bg-[#2a170e] text-amber-50 border-b border-amber-900/60 shadow-md sticky top-0 z-50">
+      <div className="max-w-6xl mx-auto px-4 h-20 flex items-center justify-between">
+        
+        {/* Brand Logo */}
+        <Link href="/blog" className="flex items-center gap-2 transition hover:opacity-95">
+          <div className="relative h-14 w-40 sm:h-16 sm:w-48 bg-white/90 rounded-lg p-1 shadow-inner flex items-center justify-center">
+            <Image
+              src="/logo.png"
+              alt="Narmada Crafts Logo"
+              fill
+              priority
+              className="object-contain p-0.5"
+            />
+          </div>
         </Link>
 
-        <div className="flex items-center gap-5 text-sm font-medium">
-          {/* Public links */}
-          <Link href="/blog" className="flex items-center gap-1.5 hover:text-amber-300 transition">
-            <BookOpen className="w-4 h-4" />
+        {/* Menu Links */}
+        <div className="flex items-center gap-4 sm:gap-6 text-sm font-medium">
+          <Link
+            href="/blog"
+            className="flex items-center gap-1.5 hover:text-amber-300 transition text-xs sm:text-sm"
+          >
+            <BookOpen className="w-4 h-4 text-amber-400" />
             <span>Blog</span>
           </Link>
 
-          <Link href="/gallery" className="flex items-center gap-1.5 hover:text-amber-300 transition">
-            <ImageIcon className="w-4 h-4" />
-            <span>Craft Gallery</span>
+          <Link
+            href="/gallery"
+            className="flex items-center gap-1.5 hover:text-amber-300 transition text-xs sm:text-sm"
+          >
+            <KeyRound className="w-4 h-4 text-amber-400" />
+            <span>View Your Idol</span>
           </Link>
 
-          {/* Admin link only visible to ADMIN role */}
+          {/* Admin link visible only to Admin */}
           {isAdmin && (
             <Link
               href="/admin"
-              className="flex items-center gap-1.5 bg-amber-800 hover:bg-amber-700 px-3 py-1 rounded text-amber-100 transition text-xs"
+              className="flex items-center gap-1.5 bg-amber-800 hover:bg-amber-700 px-3 py-1.5 rounded-lg text-amber-100 transition text-xs font-semibold shadow-sm"
             >
               <Shield className="w-3.5 h-3.5 text-amber-300" />
               <span>Admin Portal</span>
             </Link>
           )}
 
-          {/* Logout if authenticated */}
           {session && (
             <button
               onClick={() => signOut({ callbackUrl: "/blog" })}
-              className="flex items-center gap-1 text-xs text-amber-300 hover:text-white transition ml-2"
+              className="flex items-center gap-1 text-xs text-amber-300 hover:text-white transition ml-1"
             >
               <LogOut className="w-3.5 h-3.5" />
-              <span>Logout</span>
+              <span className="hidden sm:inline">Logout</span>
             </button>
           )}
         </div>
+
       </div>
     </nav>
   );
