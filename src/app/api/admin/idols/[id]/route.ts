@@ -16,30 +16,21 @@ export async function PATCH(
     }
 
     const params = await Promise.resolve(context.params);
-    const {
-      name,
-      templeName,
-      location,
-      description,
-      accessCode,
-      height,
-      totalAmount,
-      advanceAmount,
-      status,
-    } = await req.json();
+    const body = await req.json();
 
     const updated = await prisma.deityIdol.update({
       where: { id: params.id },
       data: {
-        name,
-        templeName: templeName || null,
-        location: location || null,
-        description: description || null,
-        accessCode: accessCode ? accessCode.trim() : null,
-        height: height || null,
-        totalAmount: totalAmount !== undefined ? parseFloat(totalAmount) : undefined,
-        advanceAmount: advanceAmount !== undefined ? parseFloat(advanceAmount) : undefined,
-        status: status || "In progress",
+        name: body.name,
+        receiptNo: body.receiptNo ? body.receiptNo.trim() : null,
+        accessCode: body.accessCode ? body.accessCode.trim() : null,
+        templeName: body.templeName || null,
+        location: body.location || null,
+        description: body.description || null,
+        height: body.height || null,
+        totalAmount: body.totalAmount !== undefined ? parseFloat(body.totalAmount) : undefined,
+        advanceAmount: body.advanceAmount !== undefined ? parseFloat(body.advanceAmount) : undefined,
+        status: body.status || "In progress",
       },
     });
 
@@ -63,20 +54,10 @@ export async function DELETE(
     }
 
     const params = await Promise.resolve(context.params);
-
-    await prisma.idolImage.deleteMany({
-      where: { idolId: params.id },
-    });
-
-    await prisma.deityIdol.delete({
-      where: { id: params.id },
-    });
-
+    await prisma.idolImage.deleteMany({ where: { idolId: params.id } });
+    await prisma.deityIdol.delete({ where: { id: params.id } });
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    return NextResponse.json(
-      { error: error?.message || "Failed to delete idol" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error?.message || "Failed to delete" }, { status: 500 });
   }
 }

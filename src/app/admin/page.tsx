@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, ImagePlus, Trash2, Upload, Edit, Check, X, Newspaper, KeyRound } from "lucide-react";
+import { Plus, ImagePlus, Trash2, Upload, Edit, Check, X, Newspaper, KeyRound, Receipt } from "lucide-react";
 
 interface IdolImage {
   id: string;
@@ -13,6 +13,7 @@ interface IdolImage {
 interface DeityIdol {
   id: string;
   name: string;
+  receiptNo?: string;
   templeName?: string;
   location?: string;
   description?: string;
@@ -39,6 +40,7 @@ export default function AdminPage() {
 
   // Add Idol State
   const [name, setName] = useState("");
+  const [receiptNo, setReceiptNo] = useState("");
   const [templeName, setTempleName] = useState("");
   const [location, setLocation] = useState("");
   const [description, setDescription] = useState("");
@@ -51,6 +53,7 @@ export default function AdminPage() {
   // Edit Idol State
   const [editingIdolId, setEditingIdolId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  const [editReceiptNo, setEditReceiptNo] = useState("");
   const [editTempleName, setEditTempleName] = useState("");
   const [editLocation, setEditLocation] = useState("");
   const [editDescription, setEditDescription] = useState("");
@@ -141,6 +144,7 @@ export default function AdminPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name,
+        receiptNo,
         templeName,
         location,
         description,
@@ -154,6 +158,7 @@ export default function AdminPage() {
 
     if (res.ok) {
       setName("");
+      setReceiptNo("");
       setTempleName("");
       setLocation("");
       setDescription("");
@@ -171,6 +176,7 @@ export default function AdminPage() {
   const startEdit = (idol: DeityIdol) => {
     setEditingIdolId(idol.id);
     setEditName(idol.name);
+    setEditReceiptNo(idol.receiptNo || "");
     setEditTempleName(idol.templeName || "");
     setEditLocation(idol.location || "");
     setEditDescription(idol.description || "");
@@ -191,6 +197,7 @@ export default function AdminPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: editName,
+        receiptNo: editReceiptNo,
         templeName: editTempleName,
         location: editLocation,
         description: editDescription,
@@ -291,7 +298,7 @@ export default function AdminPage() {
     <div className="space-y-10 py-6 max-w-6xl mx-auto px-4">
       <h1 className="text-2xl font-bold text-amber-950">Admin Craft & Order Dashboard</h1>
 
-      {/* Grid: Add Deity & Attach Photos */}
+      {/* Grid: 1. Add Deity & 2. Attach Photos */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Form 1: Add Deity Idol */}
         <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-sm space-y-4">
@@ -299,15 +306,28 @@ export default function AdminPage() {
             <Plus className="w-5 h-5" /> 1. Add New Deity Idol Order
           </h2>
           <form onSubmit={handleCreateIdol} className="space-y-3">
-            <div>
-              <label className="text-xs font-semibold text-stone-600">Deity / Idol Name *</label>
-              <input
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Narmadeshwar Shivling"
-                className="w-full p-2 border rounded text-sm mt-1"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label className="text-xs font-semibold text-stone-600">Deity / Idol Name *</label>
+                <input
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. Narmadeshwar Shivling"
+                  className="w-full p-2 border rounded text-sm mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-stone-600 flex items-center gap-1">
+                  <Receipt className="w-3.5 h-3.5 text-stone-500" /> Receipt No
+                </label>
+                <input
+                  value={receiptNo}
+                  onChange={(e) => setReceiptNo(e.target.value)}
+                  placeholder="e.g. REC-2026-001"
+                  className="w-full p-2 border rounded text-sm mt-1"
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-2">
@@ -438,7 +458,7 @@ export default function AdminPage() {
               >
                 {idols.map((idol) => (
                   <option key={idol.id} value={idol.id}>
-                    {idol.name} ({idol.height || "No height"}) - Passcode: {idol.accessCode || "None"}
+                    {idol.name} {idol.receiptNo ? `[Rec: ${idol.receiptNo}]` : ""} - Passcode: {idol.accessCode || "None"}
                   </option>
                 ))}
               </select>
@@ -524,7 +544,18 @@ export default function AdminPage() {
                     />
                   </div>
 
-                  {/* Passcode Edit Field */}
+                  <div>
+                    <label className="text-xs font-semibold text-stone-700 flex items-center gap-1">
+                      <Receipt className="w-3.5 h-3.5 text-stone-500" /> Receipt No
+                    </label>
+                    <input
+                      value={editReceiptNo}
+                      onChange={(e) => setEditReceiptNo(e.target.value)}
+                      placeholder="e.g. REC-2026-001"
+                      className="w-full p-2 border rounded text-xs bg-white mt-0.5"
+                    />
+                  </div>
+
                   <div>
                     <label className="text-xs font-bold text-amber-900 flex items-center gap-1">
                       <KeyRound className="w-3.5 h-3.5" /> Security Passcode *
@@ -557,7 +588,7 @@ export default function AdminPage() {
                     />
                   </div>
 
-                  <div className="sm:col-span-2">
+                  <div>
                     <label className="text-xs font-semibold text-stone-700">Location</label>
                     <input
                       value={editLocation}
@@ -628,7 +659,7 @@ export default function AdminPage() {
                     onClick={() => handleSaveEdit(idol.id)}
                     className="flex items-center gap-1 text-xs px-4 py-1.5 bg-amber-800 hover:bg-amber-700 rounded text-white font-semibold shadow-sm transition"
                   >
-                    <Check className="w-3.5 h-3.5" /> Save Updated Passcode & Details
+                    <Check className="w-3.5 h-3.5" /> Save Changes
                   </button>
                 </div>
               </div>
@@ -638,6 +669,11 @@ export default function AdminPage() {
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="font-bold text-amber-950 text-base">{idol.name}</h3>
+                    {idol.receiptNo && (
+                      <span className="text-xs bg-stone-200 text-stone-800 font-medium px-2 py-0.5 rounded">
+                        Receipt: {idol.receiptNo}
+                      </span>
+                    )}
                     <span className="text-xs bg-amber-100 text-amber-900 font-mono px-2.5 py-0.5 rounded border border-amber-300 font-bold tracking-wider">
                       Passcode: {idol.accessCode || "None"}
                     </span>
@@ -684,7 +720,7 @@ export default function AdminPage() {
                     onClick={() => startEdit(idol)}
                     className="flex items-center gap-1 text-xs px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-md font-semibold transition"
                   >
-                    <Edit className="w-3.5 h-3.5" /> Edit Passcode / Details
+                    <Edit className="w-3.5 h-3.5" /> Edit
                   </button>
                   <button
                     onClick={() => handleDeleteIdol(idol.id, idol.name)}

@@ -19,6 +19,7 @@ model User {
 model DeityIdol {
   id            String      @id @default(cuid())
   name          String
+  receiptNo     String?     // Receipt / Bill number
   templeName    String?
   location      String?
   description   String?
@@ -26,7 +27,7 @@ model DeityIdol {
   height        String?     // e.g. "3.5 Feet", "24 Inches"
   totalAmount   Float?      @default(0)
   advanceAmount Float?      @default(0)
-  status        String?     @default("In progress") // "In progress", "Ready", "Delivered"
+  status        String?     @default("In progress")
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
   images        IdolImage[]

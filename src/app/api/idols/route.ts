@@ -7,14 +7,9 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const idols = await prisma.deityIdol.findMany({
-    include: {
-      images: true,
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
+    include: { images: true },
+    orderBy: { createdAt: "desc" },
   });
-
   return NextResponse.json(idols);
 }
 
@@ -27,6 +22,7 @@ export async function POST(req: Request) {
 
     const {
       name,
+      receiptNo,
       templeName,
       location,
       description,
@@ -40,6 +36,7 @@ export async function POST(req: Request) {
     const idol = await prisma.deityIdol.create({
       data: {
         name,
+        receiptNo: receiptNo?.trim() || null,
         templeName: templeName || null,
         location: location || null,
         description: description || null,
