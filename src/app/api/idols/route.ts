@@ -6,11 +6,26 @@ import { authOptions } from "../auth/[...nextauth]/route";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const idols = await prisma.deityIdol.findMany({
-    include: { images: true },
-    orderBy: { createdAt: "desc" },
-  });
-  return NextResponse.json(idols);
+  try {
+    const idols = await prisma.deityIdol.findMany({
+      include: {
+        images: {
+          orderBy: { createdAt: "desc" },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return NextResponse.json(idols);
+  } catch (error: any) {
+    console.error("Error fetching deity records:", error);
+    return NextResponse.json(
+      { error: error?.message || "Failed to fetch deity records" },
+      { status: 500 }
+    );
+  }
 }
 
 export async function POST(req: Request) {
@@ -50,6 +65,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(idol, { status: 201 });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("Error creating deity record:", error);
+    return NextResponse.json({ error: error?.message || "Failed to create" }, { status: 500 });
   }
 }

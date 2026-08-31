@@ -78,17 +78,21 @@ export default function AdminPage() {
   const [blogBase64Image, setBlogBase64Image] = useState("");
   const [blogSubmitting, setBlogSubmitting] = useState(false);
 
-  const fetchIdols = () => {
-    fetch("/api/idols")
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setIdols(data);
-          if (data.length > 0 && !selectedIdolId) setSelectedIdolId(data[0].id);
+ const fetchIdols = () => {
+  fetch("/api/idols")
+    .then((res) => res.json())
+    .then((data) => {
+      if (Array.isArray(data)) {
+        setIdols(data);
+        if (data.length > 0) {
+          setSelectedIdolId((prev) => prev || data[0].id);
         }
-      })
-      .catch((err) => console.error("Error fetching idols:", err));
-  };
+      } else {
+        console.error("API returned non-array data:", data);
+      }
+    })
+    .catch((err) => console.error("Error fetching idols:", err));
+};
 
   const fetchBlogs = () => {
     fetch("/api/blogs")
