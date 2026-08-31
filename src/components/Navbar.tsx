@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
-import { BookOpen, KeyRound, Shield, LogOut } from "lucide-react";
+import { BookOpen, KeyRound, Shield, LogOut, CalendarPlus } from "lucide-react";
 
 export default function Navbar() {
   const { data: session } = useSession();
@@ -27,24 +27,22 @@ export default function Navbar() {
         </Link>
 
         {/* Menu Links */}
-        <div className="flex items-center gap-4 sm:gap-6 text-sm font-medium">
-          <Link
-            href="/blog"
-            className="flex items-center gap-1.5 hover:text-amber-300 transition text-xs sm:text-sm"
-          >
+        <div className="flex items-center gap-3 sm:gap-6 text-sm font-medium">
+          <Link href="/blog" className="flex items-center gap-1.5 hover:text-amber-300 transition text-xs sm:text-sm">
             <BookOpen className="w-4 h-4 text-amber-400" />
             <span>Blog</span>
           </Link>
 
-          <Link
-            href="/gallery"
-            className="flex items-center gap-1.5 hover:text-amber-300 transition text-xs sm:text-sm"
-          >
+          <Link href="/book-idol" className="flex items-center gap-1.5 hover:text-amber-300 transition text-xs sm:text-sm">
+            <CalendarPlus className="w-4 h-4 text-amber-400" />
+            <span>Book Idol</span>
+          </Link>
+
+          <Link href="/gallery" className="flex items-center gap-1.5 hover:text-amber-300 transition text-xs sm:text-sm">
             <KeyRound className="w-4 h-4 text-amber-400" />
             <span>View Your Idol</span>
           </Link>
 
-          {/* Admin link visible only to Admin */}
           {isAdmin && (
             <Link
               href="/admin"
@@ -65,7 +63,6 @@ export default function Navbar() {
             </button>
           )}
         </div>
-
       </div>
     </nav>
   );

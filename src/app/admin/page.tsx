@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, ImagePlus, Trash2, Upload, Edit, Check, X, Newspaper, KeyRound, Receipt } from "lucide-react";
+import { Plus, ImagePlus, Trash2, Upload, Edit, Check, X, Newspaper, KeyRound, Receipt, CalendarPlus } from "lucide-react";
 
 interface IdolImage {
   id: string;
@@ -31,6 +31,20 @@ interface BlogPost {
   type: "TEXT" | "IMAGE" | "VIDEO";
   content?: string;
   mediaUrl?: string;
+  createdAt: string;
+}
+// Inside AdminPage component state:
+interface BookingItem {
+  id: string;
+  customerName: string;
+  phone: string;
+  email?: string;
+  idolType: string;
+  height?: string;
+  templeName?: string;
+  location?: string;
+  notes?: string;
+  status: string;
   createdAt: string;
 }
 
@@ -77,6 +91,38 @@ export default function AdminPage() {
   const [blogMediaUrl, setBlogMediaUrl] = useState("");
   const [blogBase64Image, setBlogBase64Image] = useState("");
   const [blogSubmitting, setBlogSubmitting] = useState(false);
+
+  const [bookings, setBookings] = useState<BookingItem[]>([]);
+
+const fetchBookings = () => {
+  fetch("/api/bookings")
+    .then((res) => res.json())
+    .then((data) => {
+      if (Array.isArray(data)) setBookings(data);
+    })
+    .catch((err) => console.error("Error fetching bookings:", err));
+};
+
+useEffect(() => {
+  fetchIdols();
+  fetchBlogs();
+  fetchBookings();
+}, []);
+
+const handleUpdateBookingStatus = async (id: string, newStatus: string) => {
+  const res = await fetch(`/api/bookings/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status: newStatus }),
+  });
+  if (res.ok) fetchBookings();
+};
+
+const handleDeleteBooking = async (id: string) => {
+  if (!confirm("Delete this booking request?")) return;
+  const res = await fetch(`/api/bookings/${id}`, { method: "DELETE" });
+  if (res.ok) fetchBookings();
+};
 
  const fetchIdols = () => {
   fetch("/api/idols")
@@ -849,6 +895,73 @@ export default function AdminPage() {
           </div>
         )}
       </div>
+      {/* Booking Inquiries Section */}
+<div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm space-y-4">
+  <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+    <h2 className="text-lg font-bold text-amber-950 flex items-center gap-2">
+      <CalendarPlus className="w-5 h-5 text-amber-700" /> Customer Idol Booking Inquiries ({bookings.length})
+    </h2>
+  </div>
+
+  {bookings.length === 0 ? (
+    <p className="text-xs text-stone-400 italic">No customer booking requests yet.</p>
+  ) : (
+    <div className="space-y-3">
+      {bookings.map((b) => (
+        <div key={b.id} className="p-4 rounded-xl border border-stone-200 bg-stone-50/70 space-y-2 text-xs">
+          <div className="flex flex-wrap justify-between items-start gap-2">
+            <div>
+              <span className="font-bold text-sm text-amber-950">{b.customerName}</span>
+              <span className="text-stone-500 ml-2 font-mono">{b.phone}</span>
+              {b.email && <span className="text-stone-500 ml-2">({b.email})</span>}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <select
+                value={b.status}
+                onChange={(e) => handleUpdateBookingStatus(b.id, e.target.value)}
+                className={`px-2 py-1 rounded font-bold uppercase tracking-wider text-[10px] border ${
+                  b.status === "Confirmed"
+                    ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                    : b.status === "Cancelled"
+                    ? "bg-rose-100 text-rose-800 border-rose-300"
+                    : "bg-amber-100 text-amber-800 border-amber-300"
+                }`}
+              >
+                <option value="Pending">Pending</option>
+                <option value="Confirmed">Confirmed</option>
+                <option value="Completed">Completed</option>
+                <option value="Cancelled">Cancelled</option>
+              </select>
+
+              <button
+                onClick={() => handleDeleteBooking(b.id)}
+                className="p-1 text-rose-600 hover:text-rose-800"
+                title="Delete Inquiry"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-stone-700">
+            <span className="font-semibold text-amber-900">Requested Idol: {b.idolType}</span>
+            {b.height && <span>Height: {b.height}</span>}
+            {b.templeName && <span>Temple: {b.templeName}</span>}
+            {b.location && <span>Location: {b.location}</span>}
+            <span className="text-stone-400">Date: {new Date(b.createdAt).toLocaleDateString()}</span>
+          </div>
+
+          {b.notes && (
+            <p className="bg-white p-2 rounded border border-stone-200 text-stone-600 mt-1 italic">
+              "{b.notes}"
+            </p>
+          )}
+        </div>
+      ))}
+    </div>
+  )}
+</div>
     </div>
   );
 }
