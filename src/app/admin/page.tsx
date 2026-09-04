@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, ImagePlus, Trash2, Upload, Edit, Check, X, Newspaper, KeyRound, Receipt, CalendarPlus } from "lucide-react";
+import { Plus, ImagePlus, Trash2, Upload, Edit, Check, X, Newspaper, KeyRound, Receipt, CalendarPlus, Download } from "lucide-react";
 
 interface IdolImage {
   id: string;
@@ -93,6 +93,29 @@ export default function AdminPage() {
   const [blogSubmitting, setBlogSubmitting] = useState(false);
 
   const [bookings, setBookings] = useState<BookingItem[]>([]);
+  const [downloading, setDownloading] = useState(false);
+
+const handleExportExcel = async () => {
+  try {
+    setDownloading(true);
+    const res = await fetch("/api/admin/export");
+    if (!res.ok) throw new Error("Failed to generate file");
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `narmada_crafts_data_${new Date().toISOString().split("T")[0]}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    alert("Error downloading Excel file");
+  } finally {
+    setDownloading(false);
+  }
+};
 
 const fetchBookings = () => {
   fetch("/api/bookings")
@@ -347,6 +370,15 @@ const handleDeleteBooking = async (id: string) => {
   return (
     <div className="space-y-10 py-6 max-w-6xl mx-auto px-4">
       <h1 className="text-2xl font-bold text-amber-950">Admin Craft & Order Dashboard</h1>
+
+      <button
+    onClick={handleExportExcel}
+    disabled={downloading}
+    className="flex items-center gap-2 bg-emerald-800 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-sm transition disabled:opacity-50"
+  >
+    <Download className="w-4 h-4" />
+    <span>{downloading ? "Preparing File..." : "Download Excel Report (.xlsx)"}</span>
+  </button>
 
       {/* Grid: 1. Add Deity & 2. Attach Photos */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
