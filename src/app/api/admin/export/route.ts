@@ -13,18 +13,15 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    // 1. Fetch Idol Orders
     const idols = await prisma.deityIdol.findMany({
       include: { images: true },
       orderBy: { createdAt: "desc" },
     });
 
-    // 2. Fetch Customer Bookings
     const bookings = await prisma.booking.findMany({
       orderBy: { createdAt: "desc" },
     });
 
-    // 3. Format Idol Orders Data
     const idolsSheetData = idols.map((item) => {
       const total = item.totalAmount || 0;
       const advance = item.advanceAmount || 0;
@@ -45,7 +42,6 @@ export async function GET() {
       };
     });
 
-    // 4. Format Bookings Data
     const bookingsSheetData = bookings.map((b) => ({
       "Customer Name": b.customerName,
       "Phone": b.phone,
@@ -59,7 +55,6 @@ export async function GET() {
       "Notes": b.notes || "",
     }));
 
-    // 5. Build Multi-Sheet Excel Workbook
     const workbook = XLSX.utils.book_new();
 
     const idolWorksheet = XLSX.utils.json_to_sheet(idolsSheetData);
@@ -68,20 +63,27 @@ export async function GET() {
     const bookingWorksheet = XLSX.utils.json_to_sheet(bookingsSheetData);
     XLSX.utils.book_append_sheet(workbook, bookingWorksheet, "Customer Inquiries");
 
-    // 6. Generate Binary Buffer
-    const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+    // Output binary string and wrap in Uint8Array for Next.js response compatibility
+    const binaryString = XLSX.write(workbook, { bookType: "xlsx", type: "binary" });
+    const buf = new ArrayBuffer(binaryString.length);
+    const view = new Uint8Array(buf);
+    for (let i = 0; i < binaryString.length; i++) {
+      view[i] = binaryString.charCodeAt(i) & 0xff;
+    }
 
-    return new NextResponse(buffer, {
+    const today = new Date().toISOString().split("T")[0];
+
+    return new NextResponse(buf, {
       status: 200,
       headers: {
-        "Content-Disposition": `attachment; filename="narmada_crafts_data_${new Date().toISOString().split("T")[0]}.xlsx"`,
+        "Content-Disposition": `attachment; filename="narmada_crafts_backup_${today}.xlsx"`,
         "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       },
     });
   } catch (error: any) {
     console.error("Export error:", error);
     return NextResponse.json(
-      { error: error?.message || "Failed to export data" },
+      { error: error?.message || "Failed to generate Excel report" },
       { status: 500 }
     );
   }

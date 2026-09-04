@@ -94,24 +94,29 @@ export default function AdminPage() {
 
   const [bookings, setBookings] = useState<BookingItem[]>([]);
   const [downloading, setDownloading] = useState(false);
+  
 
 const handleExportExcel = async () => {
   try {
     setDownloading(true);
     const res = await fetch("/api/admin/export");
-    if (!res.ok) throw new Error("Failed to generate file");
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || `Server responded with status ${res.status}`);
+    }
 
     const blob = await res.blob();
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `narmada_crafts_data_${new Date().toISOString().split("T")[0]}.xlsx`;
+    a.download = `narmada_crafts_backup_${new Date().toISOString().split("T")[0]}.xlsx`;
     document.body.appendChild(a);
     a.click();
     a.remove();
     window.URL.revokeObjectURL(url);
-  } catch (err) {
-    alert("Error downloading Excel file");
+  } catch (err: any) {
+    alert(`Export failed: ${err.message}`);
   } finally {
     setDownloading(false);
   }
